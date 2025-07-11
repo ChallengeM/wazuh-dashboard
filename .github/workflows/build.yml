@@ -1,0 +1,113 @@
+name: Custom Build Wazuh Dashboard .deb
+
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: 'Package revision number'
+        type: string
+        required: true
+        default: '0'
+      reference_plugins:
+        description: 'Branch/tag/commit of the wazuh-dashboard-plugins repo'
+        type: string
+        required: true
+        default: 'master'
+      is_stage:
+        description: 'Use production naming (no SHA suffix)'
+        type: boolean
+        required: true
+        default: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.vars.outputs.VERSION }}
+      REV:     ${{ steps.vars.outputs.REV }}
+      SHA:     ${{ steps.vars.outputs.SHA }}
+      PKG:     ${{ steps.vars.outputs.PKG }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read version & compute names
+        id: vars
+        run: |
+          VERSION=$(jq -r '.version' VERSION.json)
+          REV=${{ inputs.revision }}
+          SHA=$(git rev-parse --short HEAD)
+          if [ "${{ inputs.is_stage }}" = "true" ]; then
+            PKG="wazuh-dashboard_${VERSION}-${REV}_amd64.deb"
+          else
+            PKG="wazuh-dashboard_${VERSION}-${REV}_amd64_${SHA}.deb"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "REV=$REV"         >> $GITHUB_OUTPUT
+          echo "SHA=$SHA"         >> $GITHUB_OUTPUT
+          echo "PKG=$PKG"         >> $GITHUB_OUTPUT
+
+  build-dashboard:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node & bootstrap
+        run: |
+          nvm install
+          nvm use
+          corepack enable
+          corepack prepare yarn@stable --activate
+          yarn osd bootstrap
+          ln -s ../wazuh-dashboard-plugins/plugins/* plugins/
+      - name: Build slim dashboard
+        run: yarn build-platform --linux --skip-os-packages --release
+      - name: Upload dashboard tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-tar
+          path: build/target/docker/*.tar.gz
+
+  build-plugins:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plugins at ${{ inputs.reference_plugins }}
+        run: |
+          git clone -b "${{ inputs.reference_plugins }}" --single-branch \
+            https://github.com/ChallengeM/wazuh-dashboard-plugins.git plugins
+      - name: Build & zip plugins
+        run: |
+          cd plugins
+          yarn
+          yarn build
+          zip -r ../plugins.zip plugins
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugins-zip
+          path: plugins.zip
+
+  package:
+    needs: [build-dashboard, build-plugins]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: |
+            dashboard-tar
+            plugins-zip
+          path: ./
+      - name: Build .deb package
+        run: |
+          cd dev-tools/build-packages
+          bash ./build-packages.sh \
+            --deb \
+            -r ${{ needs.setup.outputs.REV }} \
+            -a file://$(pwd)/../plugins.zip \
+            -b file://$(pwd)/../$(ls ../build/target/docker/*.tar.gz) \
+            --commit-sha ${{ needs.setup.outputs.SHA }}
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-package
+          path: dev-tools/build-packages/output/${{ needs.setup.outputs.PKG }}
