@@ -91,7 +91,7 @@ export class Home extends Component {
     this.skipWelcome();
     this.dismissNewThemeModal();
 
-    const homeTitle = i18n.translate('home.breadcrumbs.homeTitle', { defaultMessage: 'Home' });
+    const homeTitle = i18n.translate('home.breadcrumbs.homeTitle', { defaultMessage: 'My Home' });
     getServices().chrome.setBreadcrumbs([{ text: homeTitle }]);
   }
 

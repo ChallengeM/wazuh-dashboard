@@ -8,12 +8,12 @@
   padding: 0 $euiSize $euiSizeS;
   box-shadow: none;
   border-bottom: none;
-  background: none;
   height: auto;
   gap: $euiSizeS;
 
   &.primaryHeader {
     padding-top: $euiSizeM;
+    background-color: $euiColorWarningTint;
   }
 
   &.primaryApplicationHeader {
