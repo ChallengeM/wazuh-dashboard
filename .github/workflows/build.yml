@@ -50,11 +50,8 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      # Checkout main dashboard repo
       - uses: actions/checkout@v4
-
-      # Checkout plugins into plugin-src/
-      - name: Checkout plugins
+      - name: Checkout plugins into plugin-src
         uses: actions/checkout@v4
         with:
           repository: ChallengeM/wazuh-dashboard-plugins
@@ -72,7 +69,6 @@ jobs:
           corepack enable
           corepack prepare yarn@stable --activate
           yarn osd bootstrap
-          # point at your plugin source dir
           ln -s ../plugin-src/plugins/* plugins/
 
       - name: Build slim dashboard
@@ -88,23 +84,26 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      # Checkout only the plugins repo
-      - name: Checkout plugins
+      - name: Checkout plugins into plugin-src
         uses: actions/checkout@v4
         with:
           repository: ChallengeM/wazuh-dashboard-plugins
           ref: ${{ inputs.reference_plugins }}
           path: plugin-src
 
-      - name: Build & zip plugins
+      - name: Build & zip each plugin
         run: |
-          cd plugin-src
-          yarn install --frozen-lockfile
-          yarn build
+          cd plugin-src/plugins
+          for dir in */; do
+            cd "$dir"
+            yarn install
+            yarn build
+            cd ..
+          done
+          cd ../
           zip -r ../plugins.zip plugins
 
-      - name: Upload plugins.zip
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: plugins-zip
           path: plugins.zip
@@ -114,7 +113,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
