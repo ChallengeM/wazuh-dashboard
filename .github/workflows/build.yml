@@ -51,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Checkout plugins into plugin-src
         uses: actions/checkout@v4
         with:
@@ -96,6 +97,7 @@ jobs:
         with:
           node-version: '18.x'
           cache: 'yarn'
+          cache-dependency-path: 'plugin-src/yarn.lock'
 
       - name: Build & zip each plugin
         run: |
@@ -119,6 +121,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
