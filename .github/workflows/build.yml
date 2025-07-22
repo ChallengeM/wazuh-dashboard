@@ -1,5 +1,5 @@
 # .github/workflows/build-deb.yml
-name: Build Wazuh Dashboard .deb
+name: Custom Build Wazuh Dashboard .deb
 
 on:
   workflow_dispatch:
@@ -50,9 +50,18 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
+      # Checkout main dashboard repo
       - uses: actions/checkout@v4
 
-      - name: Setup Node & Yarn
+      # Checkout plugins into plugin-src/
+      - name: Checkout plugins
+        uses: actions/checkout@v4
+        with:
+          repository: ChallengeM/wazuh-dashboard-plugins
+          ref: ${{ inputs.reference_plugins }}
+          path: plugin-src
+
+      - name: Setup Node & Yarn cache
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
@@ -63,7 +72,8 @@ jobs:
           corepack enable
           corepack prepare yarn@stable --activate
           yarn osd bootstrap
-          ln -s ../wazuh-dashboard-plugins/plugins/* plugins/
+          # point at your plugin source dir
+          ln -s ../plugin-src/plugins/* plugins/
 
       - name: Build slim dashboard
         run: yarn build-platform --linux --skip-os-packages --release
@@ -78,19 +88,23 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout plugins at ${{ inputs.reference_plugins }}
-        run: |
-          git clone -b "${{ inputs.reference_plugins }}" --single-branch \
-            https://github.com/ChallengeM/wazuh-dashboard-plugins.git plugins
+      # Checkout only the plugins repo
+      - name: Checkout plugins
+        uses: actions/checkout@v4
+        with:
+          repository: ChallengeM/wazuh-dashboard-plugins
+          ref: ${{ inputs.reference_plugins }}
+          path: plugin-src
 
       - name: Build & zip plugins
         run: |
-          cd plugins
-          yarn
+          cd plugin-src
+          yarn install --frozen-lockfile
           yarn build
           zip -r ../plugins.zip plugins
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload plugins.zip
+        uses: actions/upload-artifact@v4
         with:
           name: plugins-zip
           path: plugins.zip
