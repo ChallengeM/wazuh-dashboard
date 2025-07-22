@@ -22,7 +22,7 @@ export const CENTER_MARK_THEMED = 'ui/logos/wazuh_center_mark.svg';
 export const CENTER_MARK_ON_LIGHT = 'ui/logos/wazuh_center_mark_on_light.svg';
 export const CENTER_MARK_ON_DARK = 'ui/logos/wazuh_center_mark_on_dark.svg';
 export const ANIMATED_MARK_THEMED = 'ui/logos/spinner.svg';
-export const ANIMATED_MARK_ON_LIGHT = 'ui/logos/spinner_on_light.svg';
+export const ANIMATED_MARK_ON_LIGHT = 'ui/logos/scopd_spinner_on_light.svg';
 export const ANIMATED_MARK_ON_DARK = 'ui/logos/spinner_on_dark.svg';
 
 interface AssetOption {
