@@ -91,16 +91,22 @@ jobs:
           ref: ${{ inputs.reference_plugins }}
           path: plugin-src
 
+      - name: Setup Node & Yarn cache for plugins
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'yarn'
+
       - name: Build & zip each plugin
         run: |
           cd plugin-src/plugins
           for dir in */; do
             cd "$dir"
-            yarn install
+            yarn install --frozen-lockfile
             yarn build
             cd ..
           done
-          cd ../
+          cd ..
           zip -r ../plugins.zip plugins
 
       - uses: actions/upload-artifact@v4
