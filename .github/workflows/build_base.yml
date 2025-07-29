@@ -23,6 +23,14 @@ on:
 
   workflow_dispatch:
     inputs:
+      SYSTEM:
+        type: choice
+        description: 'Target system package type'
+        required: true
+        options:
+          - deb
+          - rpm
+        default: deb
       CHECKOUT_TO: # This is the branch to checkout to. Defaults to 'main'
         description: 'The branch/tag/commit to checkout to'
         required: true
