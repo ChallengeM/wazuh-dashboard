@@ -5,6 +5,11 @@ name: Build base
 on:
   workflow_call:
     inputs:
+      SYSTEM:
+        description: 'Package OS'
+        required: true
+        default: 'deb'
+        type: string
       CHECKOUT_TO: # This is the branch to checkout to. Defaults to 'main'
         description: 'The branch/tag/commit to checkout to'
         required: true
